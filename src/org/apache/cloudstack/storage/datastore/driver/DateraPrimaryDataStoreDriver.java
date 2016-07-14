@@ -19,7 +19,6 @@ package org.apache.cloudstack.storage.datastore.driver;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
 import javax.inject.Inject;
 
 import org.apache.cloudstack.engine.subsystem.api.storage.ChapInfo;
@@ -76,6 +75,7 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
     @Inject private StoragePoolDetailsDao _storagePoolDetailsDao;
     @Inject private VolumeDao _volumeDao;
     @Inject private VolumeDetailsDao _volumeDetailsDao;
+    private int ADJUSTED_VOLUME_SIZE = 1;
 
     @Override
     public Map<String, String> getCapabilities() {
@@ -312,7 +312,7 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
 
             DateraRestClient rest = new DateraRestClient(dtMetaData.mangementIP, dtMetaData.managementPort, dtMetaData.managementUserName, dtMetaData.managementPassword);
             int dtVolSize =  DateraUtil.getVolumeSizeInGB(volumeInfo.getSize());
-            String dtVolumeName = rest.createNextVolume(dtMetaData.appInstanceName, DateraModel.defaultStorageName, dtVolSize);
+            String dtVolumeName = rest.createNextVolume(dtMetaData.appInstanceName, DateraModel.defaultStorageName, dtVolSize+ADJUSTED_VOLUME_SIZE);
             if(null == dtVolumeName || dtVolumeName.isEmpty())
             {
                 throw new CloudRuntimeException("Datera : Could not create a volume");
@@ -352,11 +352,12 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
             csVolume.setFolder(String.valueOf(lunId));
             csVolume.setPoolType(StoragePoolType.IscsiLUN);
             csVolume.setPoolId(storagePoolId);
+            csVolume.setPath(dtVolumeInfo.uuid);
 
             _volumeDao.update(csVolume.getId(), csVolume);
 
 
-            updateVolumeDetails(csVolume.getId(), DateraUtil.getVolumeSizeInBytes(dtVolumeInfo.size));
+            updateVolumeDetails(csVolume.getId(), DateraUtil.getVolumeSizeInBytes(dtVolumeInfo.size-ADJUSTED_VOLUME_SIZE));
 
 
             long capacityBytes = storagePool.getCapacityBytes();
@@ -570,6 +571,15 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
         DateraUtil.DateraMetaData dtMetaData = DateraUtil.getDateraCred(storagePoolId, _storagePoolDetailsDao);
         registerInitiatorsOnDatera(dtMetaData.mangementIP,dtMetaData.managementPort,dtMetaData.managementUserName,dtMetaData.managementPassword,dtMetaData.appInstanceName,dtMetaData.storageInstanceName,host.getStorageUrl());
         s_logger.info("End connectVolumeToHost ");
+
+        try {
+            s_logger.info("Sleeping for 10 seconds");
+            Thread.sleep(10000);
+        } catch (InterruptedException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+
         return true;
 
     }
