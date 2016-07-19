@@ -220,4 +220,16 @@ public class DateraModel {
            totalIopsMax = totalIOPS;
        }
     }
+    public static class SnapshotVolume
+    {
+       public String path;
+       public String uuid;
+       public String timestamp;
+       @SerializedName("op_state")
+       public String opState;
+       public SnapshotVolume(String uuid)
+       {
+           this.uuid = uuid;
+       }
+    }
 }

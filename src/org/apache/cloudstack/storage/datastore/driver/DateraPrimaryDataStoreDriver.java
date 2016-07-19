@@ -31,6 +31,7 @@ import org.apache.cloudstack.engine.subsystem.api.storage.SnapshotInfo;
 import org.apache.cloudstack.engine.subsystem.api.storage.VolumeInfo;
 import org.apache.cloudstack.framework.async.AsyncCompletionCallback;
 import org.apache.cloudstack.storage.command.CommandResult;
+import org.apache.cloudstack.storage.command.CreateObjectAnswer;
 import org.apache.cloudstack.storage.datastore.db.PrimaryDataStoreDao;
 import org.apache.cloudstack.storage.datastore.db.StoragePoolDetailsDao;
 import org.apache.cloudstack.storage.datastore.db.StoragePoolVO;
@@ -40,6 +41,7 @@ import org.apache.cloudstack.storage.datastore.utils.DateraRestClient;
 import org.apache.cloudstack.storage.datastore.utils.DateraUtil;
 import org.apache.log4j.Logger;
 
+import com.cloud.agent.AgentManager;
 import com.cloud.agent.api.Answer;
 import com.cloud.agent.api.to.DataObjectType;
 import com.cloud.agent.api.to.DataStoreTO;
@@ -75,7 +77,9 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
     @Inject private StoragePoolDetailsDao _storagePoolDetailsDao;
     @Inject private VolumeDao _volumeDao;
     @Inject private VolumeDetailsDao _volumeDetailsDao;
-    private int ADJUSTED_VOLUME_SIZE = 1;
+    private final static int ADJUSTED_VOLUME_SIZE = 0;
+    @Inject private AgentManager _agentMgr;
+
 
     @Override
     public Map<String, String> getCapabilities() {
@@ -579,6 +583,17 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
+/*
+        GetStorageStatsCommand cmd =  new GetStorageStatsCommand(dataStore.getUuid(),StoragePoolType.Iscsi);
+
+        Answer answer = _agentMgr.easySend(host.getId(), cmd);
+
+        if (answer == null) {
+           s_logger.info("Unable to send the get stat message to the host");
+        } else{
+            s_logger.info("Error sending message : "+answer.getDetails());
+        }
+*/
 
         return true;
 
@@ -591,7 +606,8 @@ public class DateraPrimaryDataStoreDriver implements PrimaryDataStoreDriver {
         }
         s_logger.info("Begin revoke Access : " + host.getStorageUrl());
         if(host.getStorageUrl() == null) {
-            throw new CloudRuntimeException("Host IQN not available, Can not unregister the host");
+            //throw new CloudRuntimeException("Host IQN not available, Can not unregister the host");
+            s_logger.info("Host IQN not available, Can not unregister the host");
         }
     }
 }

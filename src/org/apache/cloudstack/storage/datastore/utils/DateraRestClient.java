@@ -67,6 +67,89 @@ public class DateraRestClient {
   password = pass;
   doLogin();
  }
+/*
+ private String generateSnapshotUUIDForVolume(String appInstance, String storageInstance, String volumeName)
+ {
+     String uuid = UUID.randomUUID().toString();
+     List<DateraModel.SnapshotVolume> snapshots = getSnapshotsOnVolume(appInstance, storageInstance, volumeName);
+
+     for(int i = 0;i<5;i++)//attempt 5 times to ensure we have a unique uuid for the volume snapshot
+     {
+        boolean uuidFound = false;
+        for(DateraModel.SnapshotVolume iter : snapshots)
+         {
+             if(iter.uuid.equals(uuid))
+             {
+                 uuidFound = true;
+                 uuid = UUID.randomUUID().toString();
+                 break;
+             }
+         }
+        if(!uuidFound) break;
+     }
+     return uuid;
+ }
+*/
+ private List<Object> extractObjects(String response, Type objectType)
+ {
+     if(null == response)
+         return null;
+     List<Object> objects = new ArrayList<Object>();
+     GsonBuilder gsonBuilder = new GsonBuilder();
+     Type mapStringObjectType = new TypeToken<Map<String, Object>>() {}.getType();
+     gsonBuilder.registerTypeAdapter(mapStringObjectType, new DateraMapKeysAdapter());
+     Gson gson1 = gsonBuilder.create();
+
+     Map<String, Object> map = gson1.fromJson(response, mapStringObjectType);
+     for (Map.Entry<String, Object> entry : map.entrySet()) {
+         String json = entry.getValue().toString();
+         Object obj =  gson.fromJson(json,objectType);
+         objects.add(obj);
+      }
+
+     return objects;
+ }
+ @SuppressWarnings("unchecked")
+public List<DateraModel.SnapshotVolume> getSnapshotsOnVolume(String appInstance, String storageInstance, String volumeName)
+ {
+     String url = String.format("/v2/app_instances/%s/storage_instances/%s/volumes/%s/snapshots",appInstance, storageInstance, volumeName);
+     HttpGet getRequest = new HttpGet(url);
+     setHeaders(getRequest);
+     String response = execute(getRequest);
+     return (List<DateraModel.SnapshotVolume>)(Object)extractObjects(response,DateraModel.SnapshotVolume.class);
+ }
+ public String createSnapshotOnVolume(String appInstance, String storageInstance, String volumeName)
+ {
+     String uuid = UUID.randomUUID().toString();
+
+     String url = String.format("/v2/app_instances/%s/storage_instances/%s/volumes/%s/snapshots",appInstance, storageInstance, volumeName);
+     HttpPost postRequest = new HttpPost(url);
+     setHeaders(postRequest);
+
+     DateraModel.SnapshotVolume snapshot = new DateraModel.SnapshotVolume(uuid);
+     String payload = gson.toJson(snapshot);
+     setPayload(postRequest, payload);
+     String response = execute(postRequest);
+     s_logger.info(DateraUtil.LOG_PREFIX + "DateraRestClient.createSnapshotOnVolume response : "+ response);
+
+     DateraModel.GenericResponse genResp = gson.fromJson(response, DateraModel.GenericResponse.class);
+     if(null != genResp && null != genResp.name)
+     {
+         if(genResp.name.equals(VALIDATION_FAILED_ERROR))
+         {
+             s_logger.info(DateraUtil.LOG_PREFIX + "DateraRestClient.createSnapshotOnVolume error : "+ response);
+             return null;
+         }
+     }
+     DateraModel.SnapshotVolume resp = gson.fromJson(response, DateraModel.SnapshotVolume.class);
+
+     //handle resp.opState == unavailable, delete the snapshot and return null
+     if(resp != null && resp.uuid.equals(uuid)){
+         return uuid;
+     } else {
+         return null;
+     }
+ }
  public List<DateraModel.InitiatorGroup> enumerateInitiatorGroupsEx()
  {
      HttpGet getRequest = new HttpGet("/v2/initiator_groups");

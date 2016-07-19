@@ -5,7 +5,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 public class DateraCommon {
-    public static final String MANAGEMENT_IP = "172.19.175.170";
+    public static final String MANAGEMENT_IP = "172.19.2.214";
     public static final String USERNAME = "admin";
     public static final String PASSWORD = "password";
     public static final int PORT = 7718;
